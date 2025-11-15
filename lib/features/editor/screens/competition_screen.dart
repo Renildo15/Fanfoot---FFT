@@ -27,6 +27,26 @@ class _CompetitionScreenState extends State<CompetitionScreen> {
             title: "Competições",
             isGridView: true,
             onToggleView: toggleView,
+            btnSave: ElevatedButton.icon(
+              // onPressed: () => Navigator.push(
+              //   context,
+              //   MaterialPageRoute(builder: (context) => const NewClubPage()),
+              // ),
+              onPressed: () => {},
+              icon: const Icon(Icons.add),
+              label: const Text("Nova competição"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[700],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
           ),
         ],
       ),

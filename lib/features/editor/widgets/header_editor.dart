@@ -1,15 +1,16 @@
-import 'package:fanfoot/features/club/new_club_page.dart';
 import 'package:flutter/material.dart';
 
 class HeaderEditor extends StatelessWidget {
   final String title;
   final bool isGridView;
   final Function(bool) onToggleView;
+  final Widget btnSave;
   const HeaderEditor({
     super.key,
     required this.title,
     required this.isGridView,
     required this.onToggleView,
+    required this.btnSave,
   });
 
   @override
@@ -46,25 +47,7 @@ class HeaderEditor extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const NewClubPage()),
-                ),
-                icon: const Icon(Icons.add),
-                label: const Text("Novo clube"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
+              btnSave,
               const SizedBox(width: 8),
 
               IconButton(
