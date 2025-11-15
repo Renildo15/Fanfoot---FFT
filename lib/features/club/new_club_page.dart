@@ -4,6 +4,7 @@ import 'package:fanfoot/core/enums/club.dart';
 import 'package:fanfoot/core/models/country.dart';
 import 'package:fanfoot/core/services/club_service.dart';
 import 'package:fanfoot/core/services/country_service.dart';
+import 'package:fanfoot/features/widgets/image_preview.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -52,20 +53,6 @@ class _NewClubPageState extends State<NewClubPage> {
     });
   }
 
-  Future<void> pickImage() async {
-    const XTypeGroup typeGroup = XTypeGroup(
-      label: 'images',
-      extensions: ['jpg', 'jpeg', 'png'],
-    );
-    final XFile? file = await openFile(acceptedTypeGroups: [typeGroup]);
-
-    if (file != null) {
-      setState(() {
-        _crestFile = File(file.path);
-      });
-    }
-  }
-
   Future<void> _saveClub() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -109,36 +96,7 @@ class _NewClubPageState extends State<NewClubPage> {
           child: Column(
             children: [
               // === PREVIEW DA IMAGEM + BOTÃO ===
-              GestureDetector(
-                onTap: pickImage,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.grey.shade100,
-                      ),
-                      clipBehavior: Clip.hardEdge,
-                      child: _crestFile != null
-                          ? Image.file(_crestFile!, fit: BoxFit.cover)
-                          : const Icon(
-                              Icons.shield_outlined,
-                              size: 60,
-                              color: Colors.grey,
-                            ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: pickImage,
-                      icon: const Icon(Icons.upload),
-                      label: const Text("Selecionar escudo"),
-                    ),
-                  ],
-                ),
-              ),
+              ImagePreview(crestFile: _crestFile),
 
               const SizedBox(height: 30),
 
