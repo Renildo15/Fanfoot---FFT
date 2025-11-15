@@ -5,7 +5,7 @@ import 'package:fanfoot/core/models/country.dart';
 import 'package:fanfoot/core/services/club_service.dart';
 import 'package:fanfoot/core/services/country_service.dart';
 import 'package:fanfoot/features/widgets/image_preview.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:fanfoot/features/widgets/select_country.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
@@ -39,7 +39,6 @@ class _NewClubPageState extends State<NewClubPage> {
   final _countriesService = CountryService();
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _loadingCountries();
   }
@@ -245,40 +244,10 @@ class _NewClubPageState extends State<NewClubPage> {
                     ),
                   ),
                   const SizedBox(width: 30),
-                  Expanded(
-                    child: _isLoadingCountries
-                        ? const CircularProgressIndicator()
-                        : DropdownButtonFormField<int>(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText: 'País',
-                            ),
-                            value: _countryId,
-                            items: _countries
-                                .map(
-                                  (country) => DropdownMenuItem<int>(
-                                    value: country.id,
-                                    child: Row(
-                                      children: [
-                                        if (country.flag.isNotEmpty)
-                                          Image.network(
-                                            country.flag,
-                                            width: 24,
-                                            height: 16,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        const SizedBox(width: 8),
-                                        Text(country.name),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) =>
-                                setState(() => _countryId = value),
-                            validator: (value) =>
-                                value == null ? 'Selecione um país' : null,
-                          ),
+                  SelectCountry(
+                    countries: _countries,
+                    countryId: _countryId,
+                    isLoadingCountries: _isLoadingCountries,
                   ),
                 ],
               ),
