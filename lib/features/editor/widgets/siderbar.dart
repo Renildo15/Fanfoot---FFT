@@ -3,7 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:fanfoot/routes/routes.dart';
 
 class Siderbar extends StatelessWidget {
-  const Siderbar({super.key});
+  final int selectedIndex;
+  final Function(int, Widget) onSelect;
+
+  const Siderbar({
+    super.key,
+    required this.selectedIndex,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,8 +25,9 @@ class Siderbar extends StatelessWidget {
           return SiderbarButton(
             title: item["title"] as String,
             icon: item["icon"] as IconData,
+            selected: selectedIndex == index,
             onPressed: () {
-              Navigator.pushNamed(context, item['route'] as String);
+              onSelect(index, item["screen"] as Widget);
             },
           );
         },
