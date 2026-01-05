@@ -52,7 +52,7 @@ class _ImagePreviewState extends State<ImagePreview> {
           TextButton.icon(
             onPressed: pickImage,
             icon: const Icon(Icons.upload),
-            label: const Text("Selecionar escudo"),
+            label: const Text("Selecionar emblema"),
           ),
         ],
       ),
