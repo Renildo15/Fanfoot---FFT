@@ -1,3 +1,4 @@
+import 'package:fanfoot/features/competition/new_competition_page.dart';
 import 'package:fanfoot/features/editor/widgets/header_editor.dart';
 import 'package:flutter/material.dart';
 
@@ -28,11 +29,12 @@ class _CompetitionScreenState extends State<CompetitionScreen> {
             isGridView: true,
             onToggleView: toggleView,
             btnSave: ElevatedButton.icon(
-              // onPressed: () => Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => const NewClubPage()),
-              // ),
-              onPressed: () => {},
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NewCompetitionPage(),
+                ),
+              ),
               icon: const Icon(Icons.add),
               label: const Text("Nova competição"),
               style: ElevatedButton.styleFrom(
