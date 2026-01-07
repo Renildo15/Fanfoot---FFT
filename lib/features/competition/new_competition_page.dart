@@ -1,11 +1,15 @@
 import 'dart:io';
 
 import 'package:fanfoot/core/enums/competition.enum.dart';
+import 'package:fanfoot/core/models/competition.dart';
 import 'package:fanfoot/core/models/country.dart';
+import 'package:fanfoot/core/services/competition_service.dart';
 import 'package:fanfoot/core/services/country_service.dart';
 import 'package:fanfoot/features/widgets/image_preview.dart';
 import 'package:fanfoot/features/widgets/select_country.dart';
+import 'package:fanfoot/widgets/color_picker_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class NewCompetitionPage extends StatefulWidget {
   const NewCompetitionPage({super.key});
@@ -14,16 +18,21 @@ class NewCompetitionPage extends StatefulWidget {
   State<NewCompetitionPage> createState() => _NewCompetitionPageState();
 }
 
+// TODO: VALIDAÇÕES:QUANDO CRIAR UMA NOVA DIVISÃO DE LIGA, VALIDAR PARA CRIÁ-LA UMA DIVISÃO ABAIXO AUTOMATICAMENTE.
+// TODO: QTD  DE EQUIPES SER MULTIPLOS DE 2
+// TODO: EM PAIS CRIAR UMA OPÇÃO "FICTICIO" OU PERMITIR CRIAR UMA NOVA SELEÇÃO(ESSA OPÇÃO SÉRIA MAIS COMPLICADA)
+// TODO: TRADUZIR OS PAISES DO BANCO PARA PT-BR
 class _NewCompetitionPageState extends State<NewCompetitionPage> {
   final _formKey = GlobalKey<FormState>();
 
   String _name = "";
   CompetitionType? _type;
   double _maxTeams = 32;
-  int _pointsWin = 3;
-  int _pointsDraw = 1;
-  int _pointsLose = 0;
-  int _gdFirst = 1;
+  final int _pointsWin = 3;
+  double _level = 0;
+  final int _pointsDraw = 1;
+  final int _pointsLose = 0;
+  final int _gdFirst = 1;
   Color _primaryColor = Colors.red;
   Color _secondaryColor = Colors.blue;
   int? _countryId;
@@ -32,6 +41,7 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
 
   List<Country> _countries = [];
   final _countriesService = CountryService();
+  final _competitionService = CompetitionService();
   bool _isLoadingCountries = true;
 
   @override
@@ -47,6 +57,39 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
       _countries = countries;
       _isLoadingCountries = false;
     });
+  }
+
+  Future<void> _saveCompetition() async {
+    if (_formKey.currentState!.validate() && _type != null) {
+      _formKey.currentState!.save();
+
+      final newCompetition = Competition(
+        name: _name,
+        type: _type!,
+        countryId: _countryId,
+        gdFirst: _gdFirst,
+        level: _level.toInt(),
+        logoPath: _logoPathFile?.path,
+        maxTeams: _maxTeams.toInt(),
+        pointsDraw: _pointsDraw,
+        pointsLose: _pointsLose,
+        pointsWin: _pointsWin,
+        primaryColor: _primaryColor.toHexString(),
+        secondaryColor: _secondaryColor.toHexString(),
+      );
+
+      try {
+        await _competitionService.insertCompetition(newCompetition);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Competição salvo com sucesso!")),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erro ao salvar competição: $e")),
+        );
+      }
+    }
   }
 
   @override
@@ -124,32 +167,61 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
                     countries: _countries,
                     countryId: _countryId,
                     isLoadingCountries: _isLoadingCountries,
+                    onChanged: (value) {
+                      setState(() => _countryId = value);
+                    },
                   ),
                 ],
               ),
-              // const SizedBox(height: 30),
-              //  Row(
-              //   children: [
-              //     Container(color: _primaryColor, width: 50, height: 50),
-              //     const SizedBox(height: 30),
-              //     ElevatedButton(
-              //       onPressed: () => pickColor(context, true),
-              //       child: Text('Cor primária'),
-              //     ),
-              //     const SizedBox(width: 30),
-              //     Container(color: _secondaryColor, width: 50, height: 50),
-              //     ElevatedButton(
-              //       onPressed: () => pickColor(context, false),
-              //       child: Text('Cor secondaria'),
-              //     ),
-              //   ],
-              // ),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  ColorPickerField(
+                    color: _primaryColor,
+                    label: 'Cor primária',
+                    onColorChanged: (color) {
+                      setState(() => _primaryColor = color);
+                    },
+                  ),
+                  const SizedBox(width: 30),
+                  ColorPickerField(
+                    color: _secondaryColor,
+                    label: 'Cor secundária',
+                    onColorChanged: (color) {
+                      setState(() => _secondaryColor = color);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Divisão(Somente ligas) ${_level.toStringAsFixed(0)}',
+                        ),
+                        Slider(
+                          value: _level.clamp(0, 8),
+                          min: 0,
+                          max: 8,
+                          divisions: 8,
+                          label: _level.toInt().toString(),
+                          onChanged: (value) => setState(() => _level = value),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 30),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => {},
+                  onPressed: _saveCompetition,
                   label: const Text('Salvar competição'),
                   icon: const Icon(Icons.save),
                   style: ElevatedButton.styleFrom(
