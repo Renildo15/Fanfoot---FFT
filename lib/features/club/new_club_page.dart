@@ -6,6 +6,7 @@ import 'package:fanfoot/core/services/club_service.dart';
 import 'package:fanfoot/core/services/country_service.dart';
 import 'package:fanfoot/features/widgets/image_preview.dart';
 import 'package:fanfoot/features/widgets/select_country.dart';
+import 'package:fanfoot/widgets/color_picker_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
@@ -210,17 +211,20 @@ class _NewClubPageState extends State<NewClubPage> {
               ),
               Row(
                 children: [
-                  Container(color: _primaryColor, width: 50, height: 50),
-                  const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: () => pickColor(context, true),
-                    child: Text('Cor primária'),
+                  ColorPickerField(
+                    color: _primaryColor,
+                    label: 'Cor primária',
+                    onColorChanged: (color) {
+                      setState(() => _primaryColor = color);
+                    },
                   ),
                   const SizedBox(width: 30),
-                  Container(color: _secondaryColor, width: 50, height: 50),
-                  ElevatedButton(
-                    onPressed: () => pickColor(context, false),
-                    child: Text('Cor secondaria'),
+                  ColorPickerField(
+                    color: _secondaryColor,
+                    label: 'Cor secundária',
+                    onColorChanged: (color) {
+                      setState(() => _secondaryColor = color);
+                    },
                   ),
                 ],
               ),
@@ -248,6 +252,9 @@ class _NewClubPageState extends State<NewClubPage> {
                     countries: _countries,
                     countryId: _countryId,
                     isLoadingCountries: _isLoadingCountries,
+                    onChanged: (value) {
+                      setState(() => _countryId = value);
+                    },
                   ),
                 ],
               ),
@@ -275,34 +282,4 @@ class _NewClubPageState extends State<NewClubPage> {
       ),
     );
   }
-
-  Widget buildColorPickerPrimary() => ColorPicker(
-    pickerColor: _primaryColor,
-    onColorChanged: (color) => setState(() {
-      _primaryColor = color;
-    }),
-  );
-
-  Widget buildColorPickerSecondary() => ColorPicker(
-    pickerColor: _secondaryColor,
-    onColorChanged: (color) => setState(() {
-      _secondaryColor = color;
-    }),
-  );
-  void pickColor(BuildContext context, bool isPrimary) => showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Selecione a cor: '),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          isPrimary ? buildColorPickerPrimary() : buildColorPickerSecondary(),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Selecione'),
-          ),
-        ],
-      ),
-    ),
-  );
 }
