@@ -1,34 +1,32 @@
 import 'package:fanfoot/core/models/country.dart';
 import 'package:flutter/material.dart';
 
-class SelectCountry extends StatefulWidget {
-  bool? isLoadingCountries = true;
-  int? countryId;
-  List<Country>? countries;
-  SelectCountry({
+class SelectCountry extends StatelessWidget {
+  final bool isLoadingCountries;
+  final int? countryId;
+  final List<Country> countries;
+  final ValueChanged<int?> onChanged;
+
+  const SelectCountry({
     super.key,
-    this.countries,
-    this.countryId,
-    this.isLoadingCountries,
+    required this.countries,
+    required this.countryId,
+    required this.isLoadingCountries,
+    required this.onChanged,
   });
 
   @override
-  State<SelectCountry> createState() => _SelectCountryState();
-}
-
-class _SelectCountryState extends State<SelectCountry> {
-  @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: widget.isLoadingCountries!
+      child: isLoadingCountries
           ? const CircularProgressIndicator()
           : DropdownButtonFormField<int>(
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'País',
               ),
-              value: widget.countryId,
-              items: widget.countries!
+              value: countryId,
+              items: countries
                   .map(
                     (country) => DropdownMenuItem<int>(
                       value: country.id,
@@ -48,7 +46,7 @@ class _SelectCountryState extends State<SelectCountry> {
                     ),
                   )
                   .toList(),
-              onChanged: (value) => setState(() => widget.countryId = value),
+              onChanged: onChanged,
               validator: (value) => value == null ? 'Selecione um país' : null,
             ),
     );
