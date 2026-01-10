@@ -19,7 +19,6 @@ class NewCompetitionPage extends StatefulWidget {
 }
 
 // TODO: VALIDAÇÕES:QUANDO CRIAR UMA NOVA DIVISÃO DE LIGA, VALIDAR PARA CRIÁ-LA UMA DIVISÃO ABAIXO AUTOMATICAMENTE.
-// TODO: QTD  DE EQUIPES SER MULTIPLOS DE 2
 // TODO: EM PAIS CRIAR UMA OPÇÃO "FICTICIO" OU PERMITIR CRIAR UMA NOVA SELEÇÃO(ESSA OPÇÃO SÉRIA MAIS COMPLICADA)
 // TODO: TRADUZIR OS PAISES DO BANCO PARA PT-BR
 class _NewCompetitionPageState extends State<NewCompetitionPage> {
@@ -36,6 +35,11 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
   Color _primaryColor = Colors.red;
   Color _secondaryColor = Colors.blue;
   int? _countryId;
+
+  final List<int> cupTeamOption = [2, 4, 6, 8, 16, 32, 64];
+  final List<int> leagueTeamOption = [12, 18, 20, 24];
+
+  int _selectedIndex = 0;
 
   File? _logoPathFile;
 
@@ -92,6 +96,13 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
     }
   }
 
+  List<int> get teamOption {
+    if (_type == CompetitionType.league) {
+      return leagueTeamOption;
+    }
+    return cupTeamOption;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,7 +146,13 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
                             ),
                           )
                           .toList(),
-                      onChanged: (value) => setState(() => _type = value),
+                      onChanged: (value) => setState(() {
+                        _type = value;
+                        if (_type != CompetitionType.cup) {
+                          _selectedIndex = 0;
+                        }
+                        ;
+                      }),
                     ),
                   ),
                 ],
@@ -149,15 +166,19 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Qtd de times ${_maxTeams.toStringAsFixed(0)}'),
+                        Text(
+                          'Qtd de times ${teamOption[_selectedIndex].toStringAsFixed(0)}',
+                        ),
                         Slider(
-                          value: _maxTeams,
+                          value: _selectedIndex.toDouble(),
                           min: 0,
-                          max: 64,
-                          divisions: 100,
-                          label: _maxTeams.toInt().toString(),
-                          onChanged: (value) =>
-                              setState(() => _maxTeams = value),
+                          max: (teamOption.length - 1).toDouble(),
+                          divisions: teamOption.length - 1,
+                          label: teamOption[_selectedIndex].toString(),
+                          onChanged: (value) => setState(() {
+                            _selectedIndex = value.round();
+                            _maxTeams = teamOption[_selectedIndex].toDouble();
+                          }),
                         ),
                       ],
                     ),
