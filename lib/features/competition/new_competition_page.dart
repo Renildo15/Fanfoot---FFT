@@ -21,7 +21,6 @@ class NewCompetitionPage extends StatefulWidget {
 // TODO: VALIDAÇÕES:QUANDO CRIAR UMA NOVA DIVISÃO DE LIGA, VALIDAR PARA CRIÁ-LA UMA DIVISÃO ABAIXO AUTOMATICAMENTE.
 // TODO: MUDAR TIPO DE INPUT NAS DIVISÕES
 // TODO: EM PAIS CRIAR UMA OPÇÃO "FICTICIO" OU PERMITIR CRIAR UMA NOVA SELEÇÃO(ESSA OPÇÃO SÉRIA MAIS COMPLICADA)
-// TODO: TRADUZIR OS PAISES DO BANCO PARA PT-BR
 class _NewCompetitionPageState extends State<NewCompetitionPage> {
   final _formKey = GlobalKey<FormState>();
 
@@ -39,6 +38,17 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
 
   final List<int> cupTeamOption = [2, 4, 6, 8, 16, 32, 64];
   final List<int> leagueTeamOption = [12, 18, 20, 24];
+
+  Map<int, String> _divisions = {
+    1: '1º Divisão',
+    2: '2º Divisão',
+    3: '3º Divisão',
+    4: '4º Divisão',
+    5: '5º Divisão',
+    6: '6º Divisão',
+    7: '7º Divisão',
+    8: '8º Divisão',
+  };
 
   int _selectedIndex = 0;
 
@@ -220,20 +230,30 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Divisão ${_level.toStringAsFixed(0)}'),
-                          Slider(
-                            value: _level.clamp(0, 8),
-                            min: 0,
-                            max: 8,
-                            divisions: 8,
-                            label: _level.toInt().toString(),
-                            onChanged: (value) =>
-                                setState(() => _level = value),
-                          ),
-                        ],
+                      child: DropdownButtonFormField<int>(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Divisão',
+                        ),
+                        value: _level == 0 ? null : _level.toInt(),
+                        items: _divisions.entries.map((entry) {
+                          return DropdownMenuItem<int>(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _level = (value ?? 1).toDouble();
+                          });
+                        },
+                        validator: (value) {
+                          if (_type == CompetitionType.league &&
+                              value == null) {
+                            return 'Selecione a divisão';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                   ],
