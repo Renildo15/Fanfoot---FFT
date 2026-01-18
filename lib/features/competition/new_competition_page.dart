@@ -19,7 +19,6 @@ class NewCompetitionPage extends StatefulWidget {
 }
 
 // TODO: VALIDAÇÕES:QUANDO CRIAR UMA NOVA DIVISÃO DE LIGA, VALIDAR PARA CRIÁ-LA UMA DIVISÃO ABAIXO AUTOMATICAMENTE.
-// TODO: MUDAR TIPO DE INPUT NAS DIVISÕES
 // TODO: EM PAIS CRIAR UMA OPÇÃO "FICTICIO" OU PERMITIR CRIAR UMA NOVA SELEÇÃO(ESSA OPÇÃO SÉRIA MAIS COMPLICADA)
 class _NewCompetitionPageState extends State<NewCompetitionPage> {
   final _formKey = GlobalKey<FormState>();

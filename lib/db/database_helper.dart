@@ -19,12 +19,67 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // Incrementado para adicionar suporte a saves
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
     );
   }
 
+  /// Migração do banco de dados
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Adicionar tabela game_save
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS game_save (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          current_season INTEGER DEFAULT 2024,
+          current_week INTEGER DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          is_active INTEGER DEFAULT 0
+        );
+      ''');
+
+      // Adicionar game_id nas tabelas relacionadas (tornando opcional para dados existentes)
+      await db.execute('''
+        ALTER TABLE competition ADD COLUMN game_id INTEGER;
+      ''');
+
+      await db.execute('''
+        ALTER TABLE club ADD COLUMN game_id INTEGER;
+      ''');
+
+      await db.execute('''
+        ALTER TABLE player ADD COLUMN game_id INTEGER;
+      ''');
+
+      await db.execute('''
+        ALTER TABLE coach ADD COLUMN game_id INTEGER;
+      ''');
+
+      // Adicionar índices para melhor performance
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_competition_game_id ON competition(game_id);
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_club_game_id ON club(game_id);
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_player_game_id ON player(game_id);
+      ''');
+
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_coach_game_id ON coach(game_id);
+      ''');
+    }
+  }
+
   Future _createDB(Database db, int version) async {
+    // Tabela de países (dados globais, não específicos de save)
     await db.execute('''
       CREATE TABLE country (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +89,21 @@ class DatabaseHelper {
       );
     ''');
 
+    // Tabela de saves/jogos
+    await db.execute('''
+      CREATE TABLE game_save (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        current_season INTEGER DEFAULT 2024,
+        current_week INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        is_active INTEGER DEFAULT 0
+      );
+    ''');
+
+    // Tabela de competições (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE competition (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,10 +119,13 @@ class DatabaseHelper {
         primary_color TEXT,
         secondary_color TEXT,
         country_id INTEGER,
-        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL
+        game_id INTEGER,
+        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL,
+        FOREIGN KEY(game_id) REFERENCES game_save(id) ON DELETE CASCADE
       );
     ''');
 
+    // Tabela de clubes (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE club (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,10 +140,13 @@ class DatabaseHelper {
         primary_color TEXT,
         secondary_color TEXT,
         country_id INTEGER,
-        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL
+        game_id INTEGER,
+        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL,
+        FOREIGN KEY(game_id) REFERENCES game_save(id) ON DELETE CASCADE
       );
     ''');
 
+    // Tabela de jogadores (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE player (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,8 +167,10 @@ class DatabaseHelper {
         contract_until INTEGER DEFAULT 0,
         current_club_id INTEGER,
         country_id INTEGER,
+        game_id INTEGER,
         FOREIGN KEY(current_club_id) REFERENCES club(id) ON DELETE SET NULL,
-        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL
+        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL,
+        FOREIGN KEY(game_id) REFERENCES game_save(id) ON DELETE CASCADE
       );
     ''');
 
@@ -126,6 +204,7 @@ class DatabaseHelper {
       );
     ''');
 
+    // Tabela de treinadores (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE coach (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -139,8 +218,10 @@ class DatabaseHelper {
         contract_until TEXT DEFAULT '2025-06-30',
         club_id INTEGER UNIQUE,
         country_id INTEGER,
+        game_id INTEGER,
         FOREIGN KEY(club_id) REFERENCES club(id) ON DELETE SET NULL,
-        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL
+        FOREIGN KEY(country_id) REFERENCES country(id) ON DELETE SET NULL,
+        FOREIGN KEY(game_id) REFERENCES game_save(id) ON DELETE CASCADE
       );
     ''');
 
@@ -158,6 +239,23 @@ class DatabaseHelper {
         FOREIGN KEY(coach_id) REFERENCES coach(id) ON DELETE CASCADE,
         FOREIGN KEY(club_id) REFERENCES club(id) ON DELETE CASCADE
       );
+    ''');
+
+    // Índices para melhor performance
+    await db.execute('''
+      CREATE INDEX idx_competition_game_id ON competition(game_id);
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_club_game_id ON club(game_id);
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_player_game_id ON player(game_id);
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_coach_game_id ON coach(game_id);
     ''');
   }
 
