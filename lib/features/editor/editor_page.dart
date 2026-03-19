@@ -22,15 +22,25 @@ class _EditorPageState extends State<EditorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Editor')),
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.edit, size: 28),
+            const SizedBox(width: 12),
+            const Text('Editor'),
+          ],
+        ),
+        elevation: 2,
+      ),
       body: Row(
         children: [
           Siderbar(
             selectedIndex: _selectedIndex,
             onSelect: (index, screen) => setScreen(index, screen),
           ),
-          const VerticalDivider(thickness: 1, width: 1),
-          _currentScreen,
+          Container(width: 1, color: Colors.grey[300]),
+          Expanded(child: _currentScreen),
         ],
       ),
     );

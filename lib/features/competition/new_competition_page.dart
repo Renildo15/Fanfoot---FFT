@@ -94,11 +94,13 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
 
       try {
         await _competitionService.insertCompetition(newCompetition);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Competição salvo com sucesso!")),
+          const SnackBar(content: Text("Competição salva com sucesso!")),
         );
         Navigator.pop(context);
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Erro ao salvar competição: $e")),
         );
@@ -113,126 +115,294 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
     return cupTeamOption;
   }
 
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: const Color(0xFF2E7D32), size: 24),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF212121),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Nova competição")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              ImagePreview(crestFile: _logoPathFile),
-              const SizedBox(height: 30),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Nome da competição',
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, size: 28),
+            const SizedBox(width: 12),
+            const Text("Nova Competição"),
+          ],
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFFF5F5F5),
+              Colors.grey[100]!,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Preview do logo
+                Center(
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ImagePreview(
+                        crestFile: _logoPathFile,
+                        onImageSelected: (file) {
+                          setState(() {
+                            _logoPathFile = file;
+                          });
+                        },
                       ),
-                      onSaved: (newValue) => _name = newValue ?? '',
-                      validator: (value) => (value == null || value.isEmpty)
-                          ? 'Obrigatório'
-                          : null,
                     ),
                   ),
-                  const SizedBox(width: 30),
-                  Expanded(
-                    child: DropdownButtonFormField<CompetitionType>(
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Tipo da competição',
-                      ),
-                      value: _type,
-                      items: CompetitionType.values
-                          .map(
-                            (f) => DropdownMenuItem(
-                              value: f,
-                              child: Text(f.value),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) => setState(() {
-                        _type = value;
-                        if (_type != CompetitionType.cup) {
-                          _selectedIndex = 0;
-                        }
-                        ;
-                      }),
-                    ),
-                  ),
-                ],
-              ),
+                ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                // Seção: Informações Básicas
+                _buildSectionCard(
+                  title: 'Informações Básicas',
+                  icon: Icons.info_outline,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          'Qtd de times ${teamOption[_selectedIndex].toStringAsFixed(0)}',
+                        Expanded(
+                          child: TextFormField(
+                            decoration: InputDecoration(
+                              labelText: 'Nome da competição',
+                              prefixIcon: const Icon(Icons.title),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            onSaved: (newValue) => _name = newValue ?? '',
+                            validator: (value) => (value == null || value.isEmpty)
+                                ? 'Obrigatório'
+                                : null,
+                          ),
                         ),
-                        Slider(
-                          value: _selectedIndex.toDouble(),
-                          min: 0,
-                          max: (teamOption.length - 1).toDouble(),
-                          divisions: teamOption.length - 1,
-                          label: teamOption[_selectedIndex].toString(),
-                          onChanged: (value) => setState(() {
-                            _selectedIndex = value.round();
-                            _maxTeams = teamOption[_selectedIndex].toDouble();
-                          }),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<CompetitionType>(
+                            decoration: InputDecoration(
+                              labelText: 'Tipo da competição',
+                              prefixIcon: const Icon(Icons.category),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            value: _type,
+                            items: CompetitionType.values
+                                .map(
+                                  (f) => DropdownMenuItem(
+                                    value: f,
+                                    child: Text(f.value),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) => setState(() {
+                              _type = value;
+                              if (_type != CompetitionType.cup) {
+                                _selectedIndex = 0;
+                              }
+                            }),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 30),
-                  SelectCountry(
-                    countries: _countries,
-                    countryId: _countryId,
-                    isLoadingCountries: _isLoadingCountries,
-                    onChanged: (value) {
-                      setState(() => _countryId = value);
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              Row(
-                children: [
-                  ColorPickerField(
-                    color: _primaryColor,
-                    label: 'Cor primária',
-                    onColorChanged: (color) {
-                      setState(() => _primaryColor = color);
-                    },
-                  ),
-                  const SizedBox(width: 30),
-                  ColorPickerField(
-                    color: _secondaryColor,
-                    label: 'Cor secundária',
-                    onColorChanged: (color) {
-                      setState(() => _secondaryColor = color);
-                    },
-                  ),
-                ],
-              ),
-              if (_type == CompetitionType.league) ...[
-                const SizedBox(height: 30),
-                Row(
+                  ],
+                ),
+
+                // Seção: Configurações
+                _buildSectionCard(
+                  title: 'Configurações',
+                  icon: Icons.settings,
                   children: [
-                    Expanded(
-                      child: DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: 'Divisão',
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF2E7D32).withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Quantidade de Times',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2E7D32),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  teamOption[_selectedIndex].toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: const Color(0xFF2E7D32),
+                              inactiveTrackColor:
+                                  const Color(0xFF2E7D32).withOpacity(0.3),
+                              thumbColor: const Color(0xFF2E7D32),
+                              overlayColor:
+                                  const Color(0xFF2E7D32).withOpacity(0.2),
+                              thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 12,
+                              ),
+                            ),
+                            child: Slider(
+                              value: _selectedIndex.toDouble(),
+                              min: 0,
+                              max: (teamOption.length - 1).toDouble(),
+                              divisions: teamOption.length - 1,
+                              label: teamOption[_selectedIndex].toString(),
+                              onChanged: (value) => setState(() {
+                                _selectedIndex = value.round();
+                                _maxTeams = teamOption[_selectedIndex].toDouble();
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SelectCountry(
+                      countries: _countries,
+                      countryId: _countryId,
+                      isLoadingCountries: _isLoadingCountries,
+                      onChanged: (value) {
+                        setState(() => _countryId = value);
+                      },
+                    ),
+                  ],
+                ),
+
+                // Seção: Cores
+                _buildSectionCard(
+                  title: 'Identidade Visual',
+                  icon: Icons.palette,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ColorPickerField(
+                            color: _primaryColor,
+                            label: 'Cor primária',
+                            onColorChanged: (color) {
+                              setState(() => _primaryColor = color);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ColorPickerField(
+                            color: _secondaryColor,
+                            label: 'Cor secundária',
+                            onColorChanged: (color) {
+                              setState(() => _secondaryColor = color);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Seção: Divisão (apenas para ligas)
+                if (_type == CompetitionType.league) ...[
+                  _buildSectionCard(
+                    title: 'Divisão',
+                    icon: Icons.layers,
+                    children: [
+                      DropdownButtonFormField<int>(
+                        decoration: InputDecoration(
+                          labelText: 'Nível da divisão',
+                          prefixIcon: const Icon(Icons.stairs),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
                         ),
                         value: _level == 0 ? null : _level.toInt(),
                         items: _divisions.entries.map((entry) {
@@ -247,33 +417,43 @@ class _NewCompetitionPageState extends State<NewCompetitionPage> {
                           });
                         },
                         validator: (value) {
-                          if (_type == CompetitionType.league &&
-                              value == null) {
+                          if (_type == CompetitionType.league && value == null) {
                             return 'Selecione a divisão';
                           }
                           return null;
                         },
                       ),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: 20),
+
+                // Botão de salvar
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _saveCompetition,
+                    icon: const Icon(Icons.save, size: 24),
+                    label: const Text(
+                      'Salvar Competição',
+                      style: TextStyle(fontSize: 18),
                     ),
-                  ],
-                ),
-              ],
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _saveCompetition,
-                  label: const Text('Salvar competição'),
-                  icon: const Icon(Icons.save),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    textStyle: const TextStyle(fontSize: 16),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                    ),
                   ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

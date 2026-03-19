@@ -16,27 +16,50 @@ class SiderbarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = selected ? Colors.green[900]! : Colors.green[700]!;
-    final Color fg = Colors.white;
-    final double elevation = selected ? 8 : 4;
-
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, color: fg),
-      label: Text(
-        title,
-        style: TextStyle(
-          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-        ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      margin: EdgeInsets.only(right: selected ? 0 : 8),
+      decoration: BoxDecoration(
+        color: selected ? Colors.white : Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(2, 2),
+                ),
+              ]
+            : null,
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: bg,
-        foregroundColor: fg,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        alignment: Alignment.centerLeft,
-        elevation: elevation,
-        shadowColor: Colors.black45,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: selected ? const Color(0xFF2E7D32) : Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: selected ? const Color(0xFF2E7D32) : Colors.white,
+                    fontSize: 16,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
