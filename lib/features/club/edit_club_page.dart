@@ -4,37 +4,47 @@ import 'package:fanfoot/core/enums/club.dart';
 import 'package:fanfoot/core/models/country.dart';
 import 'package:fanfoot/core/services/club_service.dart';
 import 'package:fanfoot/core/services/country_service.dart';
+import 'package:fanfoot/features/club/widgets/kit_manager.dart';
 import 'package:fanfoot/features/widgets/image_preview.dart';
 import 'package:fanfoot/features/widgets/select_country.dart';
 import 'package:fanfoot/widgets/color_picker_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-class NewClubPage extends StatefulWidget {
-  const NewClubPage({super.key});
-
-  @override
-  State<NewClubPage> createState() => _NewClubPageState();
+extension ColorExtension on Color {
+  String toHexString() {
+    return value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase();
+  }
 }
 
-class _NewClubPageState extends State<NewClubPage> {
+class EditClubPage extends StatefulWidget {
+  final Club club;
+
+  const EditClubPage({super.key, required this.club});
+
+  @override
+  State<EditClubPage> createState() => _EditClubPageState();
+}
+
+class _EditClubPageState extends State<EditClubPage> {
   final _formKey = GlobalKey<FormState>();
 
-  String _name = '';
-  String? _shortName;
-  double _reputation = 0;
-  double _budget = 0.0;
-  double _wageBudget = 0.0;
+  late String _name;
+  late String? _shortName;
+  late double _reputation;
+  late double _budget;
+  late double _wageBudget;
   ClubFederation? _federation;
   String? _stadium;
-  Color _primaryColor = Colors.red;
-  Color _secondaryColor = Colors.blue;
+  late Color _primaryColor;
+  late Color _secondaryColor;
   int? _countryId;
+  int _seasonYear = DateTime.now().year;
 
   File? _crestFile;
 
   List<Country> _countries = [];
   bool _isLoadingCountries = true;
+  bool _isSaving = false;
 
   final _clubService = ClubService();
   final _countriesService = CountryService();
@@ -42,12 +52,29 @@ class _NewClubPageState extends State<NewClubPage> {
   @override
   void initState() {
     super.initState();
+    _name = widget.club.name;
+    _shortName = widget.club.shortName;
+    _reputation = widget.club.reputation.toDouble();
+    _budget = widget.club.budget;
+    _wageBudget = widget.club.wageBudget;
+    _federation = widget.club.federation;
+    _stadium = widget.club.stadium;
+    _primaryColor = _hexToColor(widget.club.primaryColor ?? 'FF0000');
+    _secondaryColor = _hexToColor(widget.club.secondaryColor ?? 'FFFFFF');
+    _countryId = widget.club.countryId;
     _loadingCountries();
+  }
+
+  Color _hexToColor(String hex) {
+    hex = hex.replaceAll('#', '');
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    }
+    return Color(int.parse(hex, radix: 16));
   }
 
   Future<void> _loadingCountries() async {
     final countries = await _countriesService.getAllCountries();
-
     setState(() {
       _countries = countries;
       _isLoadingCountries = false;
@@ -56,9 +83,10 @@ class _NewClubPageState extends State<NewClubPage> {
 
   Future<void> _saveClub() async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+      setState(() => _isSaving = true);
 
-      final newClub = Club(
+      final updatedClub = Club(
+        id: widget.club.id,
         name: _name,
         shortName: _shortName,
         reputation: _reputation.toInt(),
@@ -68,42 +96,24 @@ class _NewClubPageState extends State<NewClubPage> {
         stadium: _stadium,
         primaryColor: _primaryColor.toHexString(),
         secondaryColor: _secondaryColor.toHexString(),
-        crestPath: _crestFile?.path,
+        crestPath: _crestFile?.path ?? widget.club.crestPath,
         countryId: _countryId,
       );
 
       try {
-        final clubId = await _clubService.insertClub(newClub);
+        await _clubService.updateClub(updatedClub);
         if (!mounted) return;
-
-        final shouldAddKits = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Clube salvo com sucesso!'),
-            content: const Text('Deseja adicionar uniformes agora?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Mais tarde'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Adicionar'),
-              ),
-            ],
-          ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Clube atualizado com sucesso!")),
         );
-
-        if (shouldAddKits == true && mounted) {
-          Navigator.pop(context, clubId);
-        } else {
-          Navigator.pop(context);
-        }
+        Navigator.pop(context, true);
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Erro ao salvar o clube: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erro ao atualizar o clube: $e")),
+        );
+      } finally {
+        if (mounted) setState(() => _isSaving = false);
       }
     }
   }
@@ -111,6 +121,7 @@ class _NewClubPageState extends State<NewClubPage> {
   Widget _buildSectionCard({
     required String title,
     required IconData icon,
+    required Color color,
     required List<Widget> children,
   }) {
     return Card(
@@ -127,10 +138,10 @@ class _NewClubPageState extends State<NewClubPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, color: const Color(0xFF2E7D32), size: 24),
+                  child: Icon(icon, color: color, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -159,15 +170,16 @@ class _NewClubPageState extends State<NewClubPage> {
     required int divisions,
     required Function(double) onChanged,
     String? formatValue,
+    required Color color,
   }) {
     final displayValue = formatValue ?? value.toInt().toString();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2E7D32).withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2E7D32).withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,7 +200,7 @@ class _NewClubPageState extends State<NewClubPage> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2E7D32),
+                  color: color,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -205,10 +217,10 @@ class _NewClubPageState extends State<NewClubPage> {
           const SizedBox(height: 12),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: const Color(0xFF2E7D32),
-              inactiveTrackColor: const Color(0xFF2E7D32).withOpacity(0.3),
-              thumbColor: const Color(0xFF2E7D32),
-              overlayColor: const Color(0xFF2E7D32).withOpacity(0.2),
+              activeTrackColor: color,
+              inactiveTrackColor: color.withValues(alpha: 0.3),
+              thumbColor: color,
+              overlayColor: color.withValues(alpha: 0.2),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
             ),
             child: Slider(
@@ -243,7 +255,7 @@ class _NewClubPageState extends State<NewClubPage> {
           children: [
             const Icon(Icons.shield, size: 28),
             const SizedBox(width: 12),
-            const Text("Novo Clube"),
+            Text("Editar ${widget.club.name}"),
           ],
         ),
       ),
@@ -262,7 +274,6 @@ class _NewClubPageState extends State<NewClubPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Preview do emblema
                 Center(
                   child: Card(
                     elevation: 4,
@@ -274,26 +285,23 @@ class _NewClubPageState extends State<NewClubPage> {
                       child: ImagePreview(
                         crestFile: _crestFile,
                         onImageSelected: (file) {
-                          setState(() {
-                            _crestFile = file;
-                          });
+                          setState(() => _crestFile = file);
                         },
                       ),
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
-                // Seção: Informações Básicas
                 _buildSectionCard(
                   title: 'Informações Básicas',
                   icon: Icons.info_outline,
+                  color: Colors.blue[700]!,
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
+                            initialValue: _name,
                             decoration: InputDecoration(
                               labelText: 'Nome do clube',
                               prefixIcon: const Icon(Icons.group),
@@ -313,6 +321,7 @@ class _NewClubPageState extends State<NewClubPage> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: TextFormField(
+                            initialValue: _shortName,
                             decoration: InputDecoration(
                               labelText: 'Sigla',
                               prefixIcon: const Icon(Icons.text_fields),
@@ -323,21 +332,16 @@ class _NewClubPageState extends State<NewClubPage> {
                               fillColor: Colors.white,
                             ),
                             onSaved: (newValue) => _shortName = newValue,
-                            validator: (value) =>
-                                (value == null || value.isEmpty)
-                                ? 'Obrigatório'
-                                : null,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-
-                // Seção: Orçamento e Recursos
                 _buildSectionCard(
                   title: 'Orçamento e Recursos',
                   icon: Icons.account_balance_wallet,
+                  color: Colors.green[700]!,
                   children: [
                     _buildSliderField(
                       label: 'Orçamento',
@@ -347,6 +351,7 @@ class _NewClubPageState extends State<NewClubPage> {
                       divisions: 100,
                       formatValue: _formatCurrency(_budget),
                       onChanged: (value) => setState(() => _budget = value),
+                      color: Colors.green[700]!,
                     ),
                     const SizedBox(height: 16),
                     _buildSliderField(
@@ -357,14 +362,14 @@ class _NewClubPageState extends State<NewClubPage> {
                       divisions: 100,
                       formatValue: _formatCurrency(_wageBudget),
                       onChanged: (value) => setState(() => _wageBudget = value),
+                      color: Colors.green[700]!,
                     ),
                   ],
                 ),
-
-                // Seção: Estatísticas
                 _buildSectionCard(
                   title: 'Estatísticas',
                   icon: Icons.star,
+                  color: Colors.amber[700]!,
                   children: [
                     _buildSliderField(
                       label: 'Reputação',
@@ -373,9 +378,11 @@ class _NewClubPageState extends State<NewClubPage> {
                       max: 100,
                       divisions: 100,
                       onChanged: (value) => setState(() => _reputation = value),
+                      color: Colors.amber[700]!,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
+                      initialValue: _stadium,
                       decoration: InputDecoration(
                         labelText: 'Estádio',
                         prefixIcon: const Icon(Icons.stadium),
@@ -389,16 +396,16 @@ class _NewClubPageState extends State<NewClubPage> {
                     ),
                   ],
                 ),
-
-                // Seção: Localização e Federação
                 _buildSectionCard(
                   title: 'Localização e Federação',
                   icon: Icons.public,
+                  color: Colors.purple[700]!,
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<ClubFederation>(
+                            value: _federation,
                             decoration: InputDecoration(
                               labelText: 'Federação',
                               prefixIcon: const Icon(Icons.groups),
@@ -408,7 +415,6 @@ class _NewClubPageState extends State<NewClubPage> {
                               filled: true,
                               fillColor: Colors.white,
                             ),
-                            value: _federation,
                             items: ClubFederation.values
                                 .map(
                                   (f) => DropdownMenuItem(
@@ -427,20 +433,18 @@ class _NewClubPageState extends State<NewClubPage> {
                             countries: _countries,
                             countryId: _countryId,
                             isLoadingCountries: _isLoadingCountries,
-                            onChanged: (value) {
-                              setState(() => _countryId = value);
-                            },
+                            onChanged: (value) =>
+                                setState(() => _countryId = value),
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-
-                // Seção: Cores
                 _buildSectionCard(
                   title: 'Identidade Visual',
                   icon: Icons.palette,
+                  color: Colors.red[700]!,
                   children: [
                     Row(
                       children: [
@@ -467,21 +471,60 @@ class _NewClubPageState extends State<NewClubPage> {
                     ),
                   ],
                 ),
-
+                if (widget.club.id != null) ...[
+                  _buildSectionCard(
+                    title: 'Temporada',
+                    icon: Icons.calendar_today,
+                    color: Colors.teal[700]!,
+                    children: [
+                      DropdownButtonFormField<int>(
+                        value: _seasonYear,
+                        decoration: InputDecoration(
+                          labelText: 'Ano da temporada',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        items: List.generate(10, (i) {
+                          final year = DateTime.now().year - 2 + i;
+                          return DropdownMenuItem(
+                            value: year,
+                            child: Text(year.toString()),
+                          );
+                        }),
+                        onChanged: (value) {
+                          if (value != null)
+                            setState(() => _seasonYear = value);
+                        },
+                      ),
+                    ],
+                  ),
+                  KitManager(
+                    clubId: widget.club.id!,
+                    seasonYear: _seasonYear,
+                    clubName: widget.club.name,
+                  ),
+                ],
                 const SizedBox(height: 20),
-
-                // Botão de salvar
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: _saveClub,
-                    icon: const Icon(Icons.save, size: 24),
-                    label: const Text(
-                      'Salvar Clube',
-                      style: TextStyle(fontSize: 18),
+                    onPressed: _isSaving ? null : _saveClub,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save, size: 24),
+                    label: Text(
+                      _isSaving ? 'Salvando...' : 'Salvar Alterações',
+                      style: const TextStyle(fontSize: 18),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: Colors.blue[700],
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(
@@ -491,7 +534,6 @@ class _NewClubPageState extends State<NewClubPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
               ],
             ),

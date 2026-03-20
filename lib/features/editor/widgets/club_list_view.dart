@@ -4,7 +4,15 @@ import 'package:flutter/material.dart';
 
 class ClubListView extends StatelessWidget {
   final List<Club> clubs;
-  const ClubListView({super.key, required this.clubs});
+  final Function(Club)? onEdit;
+  final Function(Club)? onDelete;
+
+  const ClubListView({
+    super.key,
+    required this.clubs,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,9 +21,13 @@ class ClubListView extends StatelessWidget {
       child: ListView.separated(
         itemBuilder: (context, index) {
           final club = clubs[index];
-          return ClubListViewItem(club: club);
+          return ClubListViewItem(
+            club: club,
+            onEdit: onEdit != null ? () => onEdit!(club) : null,
+            onDelete: onDelete != null ? () => onDelete!(club) : null,
+          );
         },
-        separatorBuilder: (_, __) => SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemCount: clubs.length,
       ),
     );

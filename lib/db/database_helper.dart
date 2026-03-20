@@ -19,16 +19,14 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2, // Incrementado para adicionar suporte a saves
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
-  /// Migração do banco de dados
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Adicionar tabela game_save
       await db.execute('''
         CREATE TABLE IF NOT EXISTS game_save (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,44 +40,50 @@ class DatabaseHelper {
         );
       ''');
 
-      // Adicionar game_id nas tabelas relacionadas (tornando opcional para dados existentes)
-      await db.execute('''
-        ALTER TABLE competition ADD COLUMN game_id INTEGER;
-      ''');
+      await db.execute('ALTER TABLE competition ADD COLUMN game_id INTEGER;');
+      await db.execute('ALTER TABLE club ADD COLUMN game_id INTEGER;');
+      await db.execute('ALTER TABLE player ADD COLUMN game_id INTEGER;');
+      await db.execute('ALTER TABLE coach ADD COLUMN game_id INTEGER;');
 
-      await db.execute('''
-        ALTER TABLE club ADD COLUMN game_id INTEGER;
-      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_competition_game_id ON competition(game_id);',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_club_game_id ON club(game_id);',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_player_game_id ON player(game_id);',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_coach_game_id ON coach(game_id);',
+      );
+    }
 
+    if (oldVersion < 3) {
       await db.execute('''
-        ALTER TABLE player ADD COLUMN game_id INTEGER;
+        CREATE TABLE IF NOT EXISTS kit (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          club_id INTEGER NOT NULL,
+          season_year INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          primary_color TEXT NOT NULL,
+          secondary_color TEXT NOT NULL,
+          pattern_color TEXT,
+          pattern TEXT DEFAULT 'solid',
+          player_name TEXT,
+          player_number INTEGER,
+          font_family TEXT,
+          is_default INTEGER DEFAULT 0,
+          FOREIGN KEY(club_id) REFERENCES club(id) ON DELETE CASCADE
+        );
       ''');
-
-      await db.execute('''
-        ALTER TABLE coach ADD COLUMN game_id INTEGER;
-      ''');
-
-      // Adicionar índices para melhor performance
-      await db.execute('''
-        CREATE INDEX IF NOT EXISTS idx_competition_game_id ON competition(game_id);
-      ''');
-
-      await db.execute('''
-        CREATE INDEX IF NOT EXISTS idx_club_game_id ON club(game_id);
-      ''');
-
-      await db.execute('''
-        CREATE INDEX IF NOT EXISTS idx_player_game_id ON player(game_id);
-      ''');
-
-      await db.execute('''
-        CREATE INDEX IF NOT EXISTS idx_coach_game_id ON coach(game_id);
-      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_kit_club_id ON kit(club_id);',
+      );
     }
   }
 
-  Future _createDB(Database db, int version) async {
-    // Tabela de países (dados globais, não específicos de save)
+  Future<void> _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE country (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,7 +93,6 @@ class DatabaseHelper {
       );
     ''');
 
-    // Tabela de saves/jogos
     await db.execute('''
       CREATE TABLE game_save (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +106,6 @@ class DatabaseHelper {
       );
     ''');
 
-    // Tabela de competições (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE competition (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,7 +127,6 @@ class DatabaseHelper {
       );
     ''');
 
-    // Tabela de clubes (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE club (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -146,7 +147,6 @@ class DatabaseHelper {
       );
     ''');
 
-    // Tabela de jogadores (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE player (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -204,7 +204,6 @@ class DatabaseHelper {
       );
     ''');
 
-    // Tabela de treinadores (relacionada a um save específico)
     await db.execute('''
       CREATE TABLE coach (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -241,25 +240,34 @@ class DatabaseHelper {
       );
     ''');
 
-    // Índices para melhor performance
     await db.execute('''
-      CREATE INDEX idx_competition_game_id ON competition(game_id);
+      CREATE TABLE kit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        club_id INTEGER NOT NULL,
+        season_year INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        primary_color TEXT NOT NULL,
+        secondary_color TEXT NOT NULL,
+        pattern_color TEXT,
+        pattern TEXT DEFAULT 'solid',
+        player_name TEXT,
+        player_number INTEGER,
+        font_family TEXT,
+        is_default INTEGER DEFAULT 0,
+        FOREIGN KEY(club_id) REFERENCES club(id) ON DELETE CASCADE
+      );
     ''');
 
-    await db.execute('''
-      CREATE INDEX idx_club_game_id ON club(game_id);
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_player_game_id ON player(game_id);
-    ''');
-
-    await db.execute('''
-      CREATE INDEX idx_coach_game_id ON coach(game_id);
-    ''');
+    await db.execute(
+      'CREATE INDEX idx_competition_game_id ON competition(game_id);',
+    );
+    await db.execute('CREATE INDEX idx_club_game_id ON club(game_id);');
+    await db.execute('CREATE INDEX idx_player_game_id ON player(game_id);');
+    await db.execute('CREATE INDEX idx_coach_game_id ON coach(game_id);');
+    await db.execute('CREATE INDEX idx_kit_club_id ON kit(club_id);');
   }
 
-  Future close() async {
+  Future<void> close() async {
     final db = await instance.database;
     db.close();
   }

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:fanfoot/core/models/club.dart';
 import 'package:fanfoot/core/services/club_csv_service.dart';
 import 'package:fanfoot/core/services/club_service.dart';
+import 'package:fanfoot/features/club/edit_club_page.dart';
 import 'package:fanfoot/features/club/new_club_page.dart';
 import 'package:fanfoot/features/club/widgets/import_clubs_dialog.dart';
 import 'package:fanfoot/features/editor/widgets/club_grid_view.dart';
@@ -100,6 +101,45 @@ class _ClubScreenState extends State<ClubScreen> {
     );
   }
 
+  void _editClub(Club club) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EditClubPage(club: club)),
+    ).then((_) => setState(() {}));
+  }
+
+  void _confirmDeleteClub(Club club) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar exclusão'),
+        content: Text('Deseja realmente excluir o clube "${club.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await ClubService().deleteClub(club.id!);
+              setState(() {});
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Clube excluído com sucesso')),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
@@ -190,12 +230,25 @@ class _ClubScreenState extends State<ClubScreen> {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NewClubPage(),
-                    ),
-                  ),
+                  onPressed: () async {
+                    final result = await Navigator.push<int>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NewClubPage(),
+                      ),
+                    );
+                    if (result != null && mounted) {
+                      final club = await ClubService().getClub(result);
+                      if (club != null && mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditClubPage(club: club),
+                          ),
+                        );
+                      }
+                    }
+                  },
                   icon: const Icon(Icons.add),
                   label: const Text("Novo clube"),
                   style: ElevatedButton.styleFrom(
@@ -230,8 +283,16 @@ class _ClubScreenState extends State<ClubScreen> {
                 final clubs = snapshot.data!;
 
                 return isGridView
-                    ? ClubGridView(clubs: clubs)
-                    : ClubListView(clubs: clubs);
+                    ? ClubGridView(
+                        clubs: clubs,
+                        onEdit: _editClub,
+                        onDelete: _confirmDeleteClub,
+                      )
+                    : ClubListView(
+                        clubs: clubs,
+                        onEdit: _editClub,
+                        onDelete: _confirmDeleteClub,
+                      );
               },
             ),
           ),

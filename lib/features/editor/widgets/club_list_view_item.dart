@@ -96,14 +96,14 @@ class _ClubListViewItemState extends State<ClubListViewItem> {
             Row(
               children: [
                 IconButton(
-                  onPressed: () {},
-                  icon: Icon(Icons.edit, color: Colors.blue),
+                  onPressed: widget.onEdit,
+                  icon: const Icon(Icons.edit, color: Colors.blue),
                   tooltip: "Editar",
                 ),
                 IconButton(
-                  onPressed: () {},
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  tooltip: "Editar",
+                  onPressed: widget.onDelete,
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  tooltip: "Excluir",
                 ),
               ],
             ),

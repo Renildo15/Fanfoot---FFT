@@ -4,7 +4,15 @@ import 'package:flutter/material.dart';
 
 class ClubGridView extends StatelessWidget {
   final List<Club> clubs;
-  const ClubGridView({super.key, required this.clubs});
+  final Function(Club)? onEdit;
+  final Function(Club)? onDelete;
+
+  const ClubGridView({
+    super.key,
+    required this.clubs,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,14 +21,18 @@ class ClubGridView extends StatelessWidget {
       child: GridView.builder(
         itemCount: clubs.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, // 2 cards por linha
+          crossAxisCount: 3,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 3 / 3, // largura / altura do card
+          childAspectRatio: 3 / 3,
         ),
         itemBuilder: (context, index) {
           final club = clubs[index];
-          return ClubGridViewItem(club: club);
+          return ClubGridViewItem(
+            club: club,
+            onEdit: onEdit != null ? () => onEdit!(club) : null,
+            onDelete: onDelete != null ? () => onDelete!(club) : null,
+          );
         },
       ),
     );
